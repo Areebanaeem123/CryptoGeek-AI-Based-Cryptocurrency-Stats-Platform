@@ -45,8 +45,15 @@ class Settings(BaseSettings):
     BINANCE_API_SECRET: str = ""
     BINANCE_API_URL: str = "https://api.binance.com/api/v3"
 
-    # ── OpenAI (Phase 2+) ───────────────────────────────
-    OPENAI_API_KEY: str = ""
+    # ── Groq (Phase 2+) ─────────────────────────────────
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+
+    # ── RAG / Vector DB ─────────────────────────────────
+    VECTOR_DB_PATH: str = "data/vector_store"
+    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"  # Local model
+    CHUNK_SIZE: int = 500
+    CHUNK_OVERLAP: int = 50
 
     # ── Ingestion Schedule (seconds) ─────────────────────
     PRICE_SYNC_INTERVAL: int = 300       # 5 minutes

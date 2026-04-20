@@ -53,6 +53,12 @@ def _job_sync_market_data():
     _run_async(sync_market_data())
 
 
+def _job_sync_rag():
+    from app.ingestion.rag_sync import sync_news_to_vector_store
+    logger.info("⏰ Scheduled: sync_news_to_vector_store")
+    _run_async(sync_news_to_vector_store())
+
+
 def start_scheduler() -> None:
     """Create and start the background scheduler."""
     global _scheduler
@@ -87,6 +93,15 @@ def start_scheduler() -> None:
         trigger=IntervalTrigger(seconds=settings.MARKET_SYNC_INTERVAL),
         id="sync_market_data",
         name="Sync market data",
+        replace_existing=True,
+    )
+
+    # RAG sync — every 10 minutes (news sync is every 10 min)
+    _scheduler.add_job(
+        _job_sync_rag,
+        trigger=IntervalTrigger(seconds=settings.NEWS_SYNC_INTERVAL),
+        id="sync_rag",
+        name="Sync RAG vector store",
         replace_existing=True,
     )
 

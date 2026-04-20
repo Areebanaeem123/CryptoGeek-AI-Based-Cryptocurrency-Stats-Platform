@@ -39,13 +39,14 @@ async def trigger_specific_sync(
 ):
     """
     Trigger a specific sync task by name.
-    Valid names: coins, prices, market_data, cmc
+    Valid names: coins, prices, market_data, cmc, rag
     """
     task_map = {
         "coins": sync_coin_list,
         "prices": sync_prices,
         "market_data": sync_market_data,
         "cmc": enrich_from_cmc,
+        "rag": _run_rag_sync,
     }
 
     if task_name not in task_map:
@@ -66,5 +67,16 @@ async def _run_sync():
     try:
         results = await run_full_sync()
         logger.info("Manual sync completed: %s", results)
+        # Also trigger RAG sync after full sync
+        await _run_rag_sync()
     except Exception as e:
         logger.error("Manual sync failed: %s", e)
+
+
+async def _run_rag_sync():
+    """Wrapper for RAG sync task."""
+    from app.ingestion.rag_sync import sync_news_to_vector_store
+    try:
+        await sync_news_to_vector_store()
+    except Exception as e:
+        logger.error(f"RAG sync failed: {e}")
