@@ -5,7 +5,8 @@ from typing import List
 
 from step2_db_storage.session import get_db
 from step2_db_storage.models.news import NewsArticle
-from step6_api_gateway.schemas.intelligence import MarketSentimentResponse
+from step6_api_gateway.schemas.intelligence import MarketSentimentResponse, DailyBriefResponse
+from step5_llm_intelligence.report_service import MarketReportService
 
 router = APIRouter(prefix="/intelligence", tags=["Market Intelligence"])
 
@@ -62,3 +63,16 @@ async def get_coin_sentiment(symbol: str, db: AsyncSession = Depends(get_db)):
         article_count=len(articles),
         summary=summary
     )
+
+@router.get("/daily-brief", response_model=DailyBriefResponse)
+async def get_daily_brief():
+    """
+    Generate a professional 'Hedge Fund Style' daily market report.
+    Synthesizes current price data and news sentiment.
+    """
+    service = MarketReportService()
+    try:
+        report = await service.generate_daily_brief()
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
