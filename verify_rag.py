@@ -12,11 +12,11 @@ import os
 sys.path.append(os.getcwd())
 
 from sqlalchemy import select
-from app.db.session import async_session_factory
-from app.db.models.news import NewsArticle
-from app.ingestion.rag_sync import sync_news_to_vector_store
-from app.services.embeddings import EmbeddingService
-from app.services.vector_store import VectorStoreService
+from step2_db_storage.session import async_session_factory
+from step2_db_storage.models.news import NewsArticle
+from step4_rag_vector_store.rag_sync import sync_news_to_vector_store
+from step3_ai_embeddings.embeddings import EmbeddingService
+from step4_rag_vector_store.vector_store import VectorStoreService
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

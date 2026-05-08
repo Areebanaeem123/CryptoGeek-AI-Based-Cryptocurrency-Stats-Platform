@@ -11,15 +11,15 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 # ── Import our models + Base so Alembic can see them ────────────────────────
-from app.db.base import Base
-from app.db.models import Coin, PriceHistory, MarketData, NewsArticle  # noqa: F401
+from step2_db_storage.base import Base
+from step2_db_storage.models import Coin, PriceHistory, MarketData, NewsArticle  # noqa: F401
 
 # Alembic Config object
 config = context.config
 
 # Override sqlalchemy.url from our .env if available
 try:
-    from app.config import get_settings
+    from core.config import get_settings
     settings = get_settings()
     config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_SYNC)
 except Exception:
