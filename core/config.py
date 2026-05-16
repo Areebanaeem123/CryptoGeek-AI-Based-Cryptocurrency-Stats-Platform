@@ -6,6 +6,7 @@ Loads settings from environment variables / .env file using pydantic-settings.
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -60,6 +61,14 @@ class Settings(BaseSettings):
     MARKET_SYNC_INTERVAL: int = 900      # 15 minutes
     NEWS_SYNC_INTERVAL: int = 600        # 10 minutes
     COIN_LIST_SYNC_INTERVAL: int = 86400 # 24 hours
+
+    @field_validator("DATABASE_URL", "DATABASE_URL_SYNC", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v: str) -> str:
+        """Strip leading/trailing whitespace from connection strings."""
+        if isinstance(v, str):
+            return v.strip()
+        return v
 
 
 @lru_cache()
