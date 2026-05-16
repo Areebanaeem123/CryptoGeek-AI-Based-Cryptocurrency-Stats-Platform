@@ -16,7 +16,8 @@ import {
   X,
   MessageSquare,
   Send,
-  User
+  User,
+  Trophy
 } from 'lucide-react';
 import './index.css';
 
@@ -49,6 +50,10 @@ const App = () => {
   const [snapshotSymbol, setSnapshotSymbol] = useState('');
   const [snapshotData, setSnapshotData] = useState(null);
   const [snapshotLoading, setSnapshotLoading] = useState(false);
+
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -215,6 +220,18 @@ const App = () => {
     }
   };
 
+  const fetchLeaderboard = async () => {
+    setLeaderboardLoading(true);
+    try {
+      const res = await axios.get('/api/v1/market/overview?limit=20');
+      setLeaderboardData(res.data);
+    } catch (err) {
+      console.error("Failed to fetch leaderboard", err);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -347,6 +364,16 @@ const App = () => {
             style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-subtle)', padding: '10px 16px', fontSize: '0.85rem' }}
           >
             <Database size={16} style={{ color: '#FFB800' }} /> Market Snapshot
+          </button>
+          <button 
+            onClick={() => {
+              setShowLeaderboardModal(true);
+              fetchLeaderboard();
+            }}
+            className="btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-subtle)', padding: '10px 16px', fontSize: '0.85rem' }}
+          >
+            <Trophy size={16} style={{ color: '#FFD700' }} /> Leaderboard
           </button>
 
           <button 
@@ -1010,6 +1037,111 @@ const App = () => {
               {snapshotData?.error && (
                 <div style={{ padding: '20px', color: 'var(--accent-secondary)', background: 'rgba(255, 59, 48, 0.1)', borderRadius: '12px', border: '1px solid rgba(255, 59, 48, 0.2)' }}>
                   {snapshotData.error}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Market Leaderboard Modal */}
+      <AnimatePresence>
+        {showLeaderboardModal && (
+          <motion.div 
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowLeaderboardModal(false)}
+          >
+            <motion.div 
+              className="modal-content"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              style={{ maxWidth: '1000px', width: '90vw' }}
+              onClick={e => e.stopPropagation()}
+            >
+              <button 
+                className="modal-close" 
+                onClick={() => setShowLeaderboardModal(false)}
+              >
+                <X size={18} />
+              </button>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Trophy size={28} style={{ color: '#FFD700' }} />
+                  <div>
+                    <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)', textTransform: 'none' }}>Global Market Leaderboard</h2>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-dim)' }}>Top 20 Assets by Market Capitalization</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={fetchLeaderboard}
+                  disabled={leaderboardLoading}
+                  style={{ background: 'none', border: '1px solid var(--border-subtle)', color: 'var(--text-dim)', padding: '8px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  <RefreshCcw size={14} className={leaderboardLoading ? 'animate-spin' : ''} /> Refresh
+                </button>
+              </div>
+
+              {leaderboardLoading ? (
+                <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Globe className="animate-spin" size={48} style={{ color: 'var(--accent-primary)' }} />
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto', paddingRight: '8px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-dim)', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>Rank</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>Asset</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>Price</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700, textAlign: 'right' }}>24h Change</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700, textAlign: 'right' }}>Market Cap</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>7d Trajectory</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboardData?.coins.map((coin) => (
+                        <tr 
+                          key={coin.coingecko_id} 
+                          className="leaderboard-row"
+                          onClick={() => {
+                            setShowLeaderboardModal(false);
+                            handleCoinClick(coin.coingecko_id);
+                          }}
+                          style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', transition: 'background 0.2s' }}
+                        >
+                          <td style={{ padding: '16px', fontWeight: 700, color: 'var(--text-dim)' }}>#{coin.market_cap_rank}</td>
+                          <td style={{ padding: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <img src={coin.image_url} alt="" width="28" height="28" style={{ borderRadius: '50%' }} />
+                              <div>
+                                <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.95rem' }}>{coin.name}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{coin.symbol.toUpperCase()}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '16px', fontWeight: 600 }}>{formatPrice(coin.current_price)}</td>
+                          <td style={{ padding: '16px', textAlign: 'right' }}>
+                            <span className={coin.price_change_24h_pct >= 0 ? 'price-up' : 'price-down'} style={{ fontWeight: 700 }}>
+                              {coin.price_change_24h_pct >= 0 ? '+' : ''}{coin.price_change_24h_pct?.toFixed(2)}%
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)' }}>{formatCompact(coin.market_cap)}</td>
+                          <td style={{ padding: '16px', width: '140px' }}>
+                            {coin.sparkline_in_7d && (
+                              <div style={{ height: '30px', width: '120px' }}>
+                                <Sparkline data={coin.sparkline_in_7d} colorClass={coin.price_change_24h_pct >= 0 ? 'price-up' : 'price-down'} />
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </motion.div>
