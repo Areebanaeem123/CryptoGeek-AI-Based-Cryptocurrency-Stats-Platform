@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -13,7 +13,10 @@ import {
   ExternalLink,
   Activity,
   Globe,
-  X
+  X,
+  MessageSquare,
+  Send,
+  User
 } from 'lucide-react';
 import './index.css';
 
@@ -37,22 +40,27 @@ const App = () => {
   const [lastSync, setLastSync] = useState(null);
   const [error, setError] = useState(null);
 
+  const [showChatMode, setShowChatMode] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [sessionId] = useState(() => Math.random().toString(36).substring(2, 12));
+  const messagesEndRef = useRef(null);
+
   const fetchData = useCallback(async (force = false) => {
     try {
       if (force) setRefreshing(true);
       setError(null);
       
-      const [reportRes, marketRes, newsRes, coinsRes] = await Promise.all([
-        axios.get('/api/v1/intelligence/daily-brief'),
-        axios.get('/api/v1/market/overview?limit=10'),
-        axios.get('/api/v1/news?page=1&per_page=5'),
-        axios.get(`/api/v1/coins?page=${currentPage}&per_page=10`),
+      const [reportRes, newsRes, coinsRes] = await Promise.all([
+        axios.get('/api/v1/intelligence/daily-brief').catch(() => ({ data: report })),
+        axios.get('/api/v1/news?page=1&per_page=5').catch(() => ({ data: newsData })),
+        axios.get(`/api/v1/coins?page=${currentPage}&per_page=10`).catch(() => ({ data: coinsData })),
       ]);
 
-      setReport(reportRes.data);
-      setMarketData(marketRes.data);
-      setNewsData(newsRes.data);
-      setCoinsData(coinsRes.data);
+      if (reportRes?.data) setReport(reportRes.data);
+      if (newsRes?.data) setNewsData(newsRes.data);
+      if (coinsRes?.data) setCoinsData(coinsRes.data);
       setCurrentPage(1);
     } catch (err) {
       console.error("Failed to fetch data", err);
@@ -112,6 +120,44 @@ const App = () => {
       setCoinModalLoading(false);
     }
   };
+
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const userMsg = { role: 'user', text: chatInput };
+    setChatMessages(prev => [...prev, userMsg]);
+    setChatInput('');
+    setChatLoading(true);
+
+    try {
+      const res = await axios.post('/api/v1/chat/', {
+        message: userMsg.text,
+        session_id: sessionId
+      });
+      
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        text: res.data.answer,
+        sources: res.data.sources
+      }]);
+    } catch (err) {
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        text: 'I apologize, but I encountered an error connecting to the intelligence cluster. Please try again.'
+      }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages, chatLoading]);
 
   useEffect(() => {
     fetchData();
@@ -350,7 +396,7 @@ const App = () => {
                     </h1>
                   </div>
                   <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-                    {report?.market_overview ? report.market_overview : "Analyzing market metrics..."}
+                    {reportSections?.overview ? reportSections.overview : "Analyzing market metrics..."}
                   </p>
                 </div>
 
@@ -379,7 +425,7 @@ const App = () => {
                   </div>
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: 'calc(100vh - 380px)', overflowY: 'auto', paddingRight: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: 'calc(100vh - 480px)', overflowY: 'auto', paddingRight: '8px', paddingBottom: '20px' }}>
                   {newsData?.articles?.map((article) => (
                     <motion.div 
                       key={article.id} 
@@ -461,7 +507,7 @@ const App = () => {
                 <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)', textTransform: 'none' }}>Key Trends</h2>
               </div>
               <div style={{ color: 'var(--text-muted)', lineHeight: '1.6', fontSize: '1.05rem', whiteSpace: 'pre-wrap' }}>
-                {report?.key_trends ? report.key_trends : "Identifying emerging shifts..."}
+                {reportSections?.trends ? reportSections.trends : "Identifying emerging shifts..."}
               </div>
             </motion.div>
           </motion.div>
@@ -493,7 +539,7 @@ const App = () => {
                 <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)', textTransform: 'none' }}>Strategic Brief</h2>
               </div>
               <div style={{ color: 'var(--text-muted)', lineHeight: '1.6', fontSize: '1.05rem', whiteSpace: 'pre-wrap' }}>
-                {report?.strategic_recommendations ? report.strategic_recommendations : "Generating fund-grade insights..."}
+                {reportSections?.recs ? reportSections.recs : "Generating fund-grade insights..."}
               </div>
             </motion.div>
           </motion.div>
@@ -558,6 +604,142 @@ const App = () => {
                 </div>
               )}
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Floating Chat Widget */}
+      <motion.button 
+        className="btn-primary"
+        onClick={() => setShowChatMode(!showChatMode)}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        style={{ 
+          position: 'fixed', 
+          bottom: '32px', 
+          right: '32px', 
+          width: '64px', 
+          height: '64px', 
+          borderRadius: '50%', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          boxShadow: '0 8px 32px rgba(0, 255, 148, 0.4)',
+          zIndex: 1000,
+          padding: 0
+        }}
+      >
+        {showChatMode ? <X size={28} /> : <MessageSquare size={28} />}
+      </motion.button>
+
+      <AnimatePresence>
+        {showChatMode && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            style={{
+              position: 'fixed',
+              bottom: '110px',
+              right: '32px',
+              width: '380px',
+              height: '600px',
+              maxHeight: 'calc(100vh - 140px)',
+              backgroundColor: 'var(--bg-elevated)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '16px',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+              zIndex: 999,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Chat Header */}
+            <div style={{ padding: '20px', borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ padding: '10px', background: 'rgba(0, 255, 148, 0.1)', borderRadius: '12px', color: 'var(--accent-primary)' }}>
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)' }}>AI Copilot</h3>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-dim)' }}>Powered by Real-Time RAG</p>
+              </div>
+            </div>
+
+            {/* Chat Messages */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {chatMessages.length === 0 && (
+                <div style={{ textAlign: 'center', color: 'var(--text-dim)', marginTop: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <MessageSquare size={48} style={{ marginBottom: '16px', opacity: 0.2 }} />
+                  <p style={{ fontSize: '0.95rem', lineHeight: '1.5', maxWidth: '80%' }}>Hello! I'm your crypto intelligence agent. How can I assist you with market data or news today?</p>
+                </div>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ 
+                    maxWidth: '85%', 
+                    padding: '12px 16px', 
+                    borderRadius: '12px', 
+                    backgroundColor: msg.role === 'user' ? 'rgba(0, 255, 148, 0.1)' : 'var(--bg-obsidian)',
+                    border: msg.role === 'user' ? '1px solid rgba(0, 255, 148, 0.2)' : '1px solid var(--border-subtle)',
+                    color: msg.role === 'user' ? 'var(--accent-primary)' : 'var(--text-main)',
+                    fontSize: '0.95rem',
+                    lineHeight: '1.5'
+                  }}>
+                    {msg.text}
+                  </div>
+                  {msg.sources && msg.sources.length > 0 && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', backgroundColor: 'var(--bg-obsidian)', border: '1px solid var(--border-subtle)', borderRadius: '8px', maxWidth: '85%' }}>
+                      <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: '4px', fontWeight: 700 }}>Sources used</div>
+                      {msg.sources.map((src, idx) => (
+                        <div key={idx} style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)', marginTop: '4px' }}>
+                          <ExternalLink size={12} style={{ color: 'var(--accent-primary)' }} />
+                          <a href={src.url || '#'} target={src.url ? '_blank' : '_self'} rel="noreferrer" style={{ textDecoration: 'none', color: 'var(--text-main)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                            {src.title}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {chatLoading && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-dim)', padding: '12px' }}>
+                  <Globe size={16} className="animate-spin" style={{ color: 'var(--accent-primary)' }} />
+                  <span style={{ fontSize: '0.9rem' }}>Analyzing blockchain data...</span>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Chat Input */}
+            <form onSubmit={handleChatSubmit} style={{ padding: '16px', borderTop: '1px solid var(--border-subtle)', backgroundColor: 'rgba(0,0,0,0.2)', display: 'flex', gap: '12px' }}>
+              <input 
+                type="text" 
+                value={chatInput} 
+                onChange={(e) => setChatInput(e.target.value)} 
+                placeholder="Ask about market trends..." 
+                disabled={chatLoading}
+                style={{ 
+                  flex: 1, 
+                  backgroundColor: 'var(--bg-obsidian)', 
+                  border: '1px solid var(--border-subtle)', 
+                  borderRadius: '12px', 
+                  padding: '12px 16px', 
+                  color: 'var(--text-main)',
+                  outline: 'none',
+                  fontSize: '0.95rem'
+                }}
+              />
+              <button 
+                type="submit" 
+                disabled={chatLoading || !chatInput.trim()}
+                className="btn-primary"
+                style={{ width: '48px', height: '48px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }}
+              >
+                <Send size={18} />
+              </button>
+            </form>
           </motion.div>
         )}
       </AnimatePresence>
