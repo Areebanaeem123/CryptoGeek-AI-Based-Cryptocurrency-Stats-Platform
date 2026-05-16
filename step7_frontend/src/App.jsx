@@ -34,6 +34,22 @@ const App = () => {
   const [showKeyTrendsModal, setShowKeyTrendsModal] = useState(false);
   const [showStrategicBriefModal, setShowStrategicBriefModal] = useState(false);
   
+  const [showSentimentModal, setShowSentimentModal] = useState(false);
+  const [sentimentSymbol, setSentimentSymbol] = useState('');
+  const [sentimentResult, setSentimentResult] = useState(null);
+  const [sentimentLoading, setSentimentLoading] = useState(false);
+  
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historySymbol, setHistorySymbol] = useState('');
+  const [historyTimeframe, setHistoryTimeframe] = useState('24h');
+  const [historyData, setHistoryData] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  
+  const [showSnapshotModal, setShowSnapshotModal] = useState(false);
+  const [snapshotSymbol, setSnapshotSymbol] = useState('');
+  const [snapshotData, setSnapshotData] = useState(null);
+  const [snapshotLoading, setSnapshotLoading] = useState(false);
+  
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -151,6 +167,54 @@ const App = () => {
     }
   };
 
+  const handleSentimentSearch = async (e) => {
+    e.preventDefault();
+    if (!sentimentSymbol.trim()) return;
+    setSentimentLoading(true);
+    setSentimentResult(null);
+    try {
+      const res = await axios.get(`/api/v1/intelligence/sentiment/${sentimentSymbol.toUpperCase()}`);
+      setSentimentResult(res.data);
+    } catch (err) {
+      console.error("Failed to fetch sentiment", err);
+      setSentimentResult({ error: "Failed to fetch sentiment data or coin not found." });
+    } finally {
+      setSentimentLoading(false);
+    }
+  };
+
+  const handleHistorySearch = async (e) => {
+    e.preventDefault();
+    if (!historySymbol.trim()) return;
+    setHistoryLoading(true);
+    setHistoryData(null);
+    try {
+      const res = await axios.get(`/api/v1/market/prices/${historySymbol.toLowerCase()}?timeframe=${historyTimeframe}`);
+      setHistoryData(res.data);
+    } catch (err) {
+      console.error("Failed to fetch history", err);
+      setHistoryData({ error: "Failed to fetch price history data. Make sure to use the exact coingecko_id (e.g. bitcoin, ethereum)." });
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleSnapshotSearch = async (e) => {
+    e.preventDefault();
+    if (!snapshotSymbol.trim()) return;
+    setSnapshotLoading(true);
+    setSnapshotData(null);
+    try {
+      const res = await axios.get(`/api/v1/market/data/${snapshotSymbol.toLowerCase()}`);
+      setSnapshotData(res.data);
+    } catch (err) {
+      console.error("Failed to fetch market snapshot", err);
+      setSnapshotData({ error: "Failed to fetch snapshot data. Make sure to use the exact coingecko_id." });
+    } finally {
+      setSnapshotLoading(false);
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -262,6 +326,27 @@ const App = () => {
             style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-subtle)', padding: '10px 16px', fontSize: '0.85rem' }}
           >
             <Sparkles size={16} style={{ color: '#F8B500' }} /> Strategic Brief
+          </button>
+          <button 
+            onClick={() => setShowSentimentModal(true)}
+            className="btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-subtle)', padding: '10px 16px', fontSize: '0.85rem' }}
+          >
+            <TrendingUp size={16} style={{ color: '#00FF94' }} /> Market Pulse
+          </button>
+          <button 
+            onClick={() => setShowHistoryModal(true)}
+            className="btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-subtle)', padding: '10px 16px', fontSize: '0.85rem' }}
+          >
+            <TrendingDown size={16} style={{ color: '#00D1FF' }} /> Price History
+          </button>
+          <button 
+            onClick={() => setShowSnapshotModal(true)}
+            className="btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-subtle)', padding: '10px 16px', fontSize: '0.85rem' }}
+          >
+            <Database size={16} style={{ color: '#FFB800' }} /> Market Snapshot
           </button>
 
           <button 
@@ -545,7 +630,393 @@ const App = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Market Pulse Selection Modal */}
+      <AnimatePresence>
+        {showSentimentModal && (
+          <motion.div 
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowSentimentModal(false)}
+          >
+            <motion.div 
+              className="modal-content"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <button 
+                className="modal-close" 
+                onClick={() => {
+                  setShowSentimentModal(false);
+                  setSentimentSymbol('');
+                  setSentimentResult(null);
+                }}
+              >
+                <X size={18} />
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <TrendingUp size={24} style={{ color: '#00FF94' }} />
+                <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)', textTransform: 'none' }}>Market Pulse</h2>
+              </div>
+              
+              <form onSubmit={handleSentimentSearch} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                <input
+                  type="text"
+                  placeholder="Enter Coin Symbol (e.g. BTC)..."
+                  value={sentimentSymbol}
+                  onChange={(e) => setSentimentSymbol(e.target.value)}
+                  style={{ flex: 1, backgroundColor: 'var(--bg-obsidian)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '12px 16px', color: 'var(--text-main)', outline: 'none' }}
+                />
+                <button 
+                  type="submit" 
+                  disabled={sentimentLoading || !sentimentSymbol.trim()}
+                  className="btn-primary"
+                  style={{ borderRadius: '12px', padding: '0 20px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Search size={16} /> Analyze
+                </button>
+              </form>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px', marginTop: '-12px' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', alignSelf: 'center', marginRight: '4px' }}>Try exploring:</span>
+                {['bitcoin', 'ethereum', 'solana', 'ripple', 'cardano'].map(coin => (
+                  <button
+                    key={coin}
+                    type="button"
+                    onClick={() => setSentimentSymbol(coin)}
+                    style={{
+                      background: 'rgba(0, 255, 148, 0.1)',
+                      border: '1px solid rgba(0, 255, 148, 0.2)',
+                      color: 'var(--accent-primary)',
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {coin}
+                  </button>
+                ))}
+              </div>
+
+              {sentimentLoading && (
+                <div style={{ padding: '40px', display: 'flex', justifySelf: 'center', justifyContent: 'center' }}>
+                  <Globe className="animate-spin" size={32} style={{ color: 'var(--accent-primary)' }} />
+                </div>
+              )}
+
+              {sentimentResult && !sentimentLoading && !sentimentResult.error && (
+                <div style={{ background: 'var(--bg-obsidian)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ fontSize: '1.4rem', margin: 0 }}>{sentimentResult.coin_symbol} Analysis</h3>
+                    <span style={{ 
+                      padding: '6px 12px', 
+                      borderRadius: '8px', 
+                      fontWeight: 700, 
+                      fontSize: '0.85rem',
+                      background: sentimentResult.overall_sentiment.toLowerCase() === 'bullish' ? 'rgba(0, 255, 148, 0.1)' : 
+                                  sentimentResult.overall_sentiment.toLowerCase() === 'bearish' ? 'rgba(255, 59, 48, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                      color: sentimentResult.overall_sentiment.toLowerCase() === 'bullish' ? 'var(--accent-primary)' : 
+                             sentimentResult.overall_sentiment.toLowerCase() === 'bearish' ? 'var(--accent-secondary)' : 'var(--text-dim)'
+                    }}>
+                      {sentimentResult.overall_sentiment.toUpperCase()} ({sentimentResult.sentiment_score?.toFixed(2)})
+                    </span>
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0 0 16px 0' }}>
+                    {sentimentResult.summary}
+                  </p>
+                  <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', margin: 0 }}>
+                    Based on recent {sentimentResult.article_count} intelligence articles.
+                  </p>
+                </div>
+              )}
+
+              {sentimentResult?.error && (
+                <div style={{ padding: '20px', color: 'var(--accent-secondary)', background: 'rgba(255, 59, 48, 0.1)', borderRadius: '12px', border: '1px solid rgba(255, 59, 48, 0.2)' }}>
+                  {sentimentResult.error}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
+      {/* Price History Modal */}
+      <AnimatePresence>
+        {showHistoryModal && (
+          <motion.div 
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowHistoryModal(false)}
+          >
+            <motion.div 
+              className="modal-content"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <button 
+                className="modal-close" 
+                onClick={() => {
+                  setShowHistoryModal(false);
+                  setHistorySymbol('');
+                  setHistoryData(null);
+                }}
+              >
+                <X size={18} />
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <TrendingDown size={24} style={{ color: '#00D1FF' }} />
+                <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)', textTransform: 'none' }}>Price History</h2>
+              </div>
+              
+              <form onSubmit={handleHistorySearch} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                <input
+                  type="text"
+                  placeholder="CoinGecko ID (e.g. bitcoin)..."
+                  value={historySymbol}
+                  onChange={(e) => setHistorySymbol(e.target.value)}
+                  style={{ flex: 1, backgroundColor: 'var(--bg-obsidian)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '12px 16px', color: 'var(--text-main)', outline: 'none' }}
+                />
+                <select 
+                  value={historyTimeframe} 
+                  onChange={(e) => setHistoryTimeframe(e.target.value)}
+                  style={{ backgroundColor: 'var(--bg-obsidian)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '12px 16px', color: 'var(--text-main)', outline: 'none' }}
+                >
+                  <option value="1h">1 Hour</option>
+                  <option value="24h">24 Hours</option>
+                  <option value="7d">7 Days</option>
+                  <option value="30d">30 Days</option>
+                  <option value="90d">90 Days</option>
+                </select>
+                <button 
+                  type="submit" 
+                  disabled={historyLoading || !historySymbol.trim()}
+                  className="btn-primary"
+                  style={{ borderRadius: '12px', padding: '0 20px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Search size={16} /> Fetch
+                </button>
+              </form>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px', marginTop: '-12px' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', alignSelf: 'center', marginRight: '4px' }}>Try exploring:</span>
+                {['bitcoin', 'ethereum', 'solana', 'ripple', 'cardano'].map(coin => (
+                  <button
+                    key={coin}
+                    type="button"
+                    onClick={() => setHistorySymbol(coin)}
+                    style={{
+                      background: 'rgba(0, 209, 255, 0.1)',
+                      border: '1px solid rgba(0, 209, 255, 0.2)',
+                      color: '#00D1FF',
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {coin}
+                  </button>
+                ))}
+              </div>
+
+              {historyLoading && (
+                <div style={{ padding: '40px', display: 'flex', justifyContent: 'center' }}>
+                  <Globe className="animate-spin" size={32} style={{ color: '#00D1FF' }} />
+                </div>
+              )}
+
+              {historyData && !historyLoading && !historyData.error && (
+                <div style={{ background: 'var(--bg-obsidian)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '1.4rem', margin: 0 }}>{historyData.symbol ? historyData.symbol.toUpperCase() : historySymbol}</h3>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)', padding: '6px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                      {historyData.prices?.length} Snapshots
+                    </span>
+                  </div>
+                  
+                  {historyData.prices && historyData.prices.length > 0 ? (
+                    <div>
+                      <div style={{ height: '80px', marginBottom: '32px', position: 'relative' }}>
+                        <Sparkline data={historyData.prices.map(p => p.price_usd)} colorClass={historyData.prices[historyData.prices.length-1].price_usd >= historyData.prices[0].price_usd ? 'price-up' : 'price-down'} />
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Start</span>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '4px' }}>{formatPrice(historyData.prices[0].price_usd)}</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Current / End</span>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '4px' }}>{formatPrice(historyData.prices[historyData.prices.length-1].price_usd)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--text-muted)' }}>No pricing history data found for {historyTimeframe}.</div>
+                  )}
+                </div>
+              )}
+
+              {historyData?.error && (
+                <div style={{ padding: '20px', color: 'var(--accent-secondary)', background: 'rgba(255, 59, 48, 0.1)', borderRadius: '12px', border: '1px solid rgba(255, 59, 48, 0.2)' }}>
+                  {historyData.error}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Market Snapshot Modal */}
+      <AnimatePresence>
+        {showSnapshotModal && (
+          <motion.div 
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowSnapshotModal(false)}
+          >
+            <motion.div 
+              className="modal-content"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <button 
+                className="modal-close" 
+                onClick={() => {
+                  setShowSnapshotModal(false);
+                  setSnapshotSymbol('');
+                  setSnapshotData(null);
+                }}
+              >
+                <X size={18} />
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <Database size={24} style={{ color: '#FFB800' }} />
+                <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)', textTransform: 'none' }}>Market Snapshot</h2>
+              </div>
+              
+              <form onSubmit={handleSnapshotSearch} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                <input
+                  type="text"
+                  placeholder="CoinGecko ID (e.g. bitcoin)..."
+                  value={snapshotSymbol}
+                  onChange={(e) => setSnapshotSymbol(e.target.value)}
+                  style={{ flex: 1, backgroundColor: 'var(--bg-obsidian)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '12px 16px', color: 'var(--text-main)', outline: 'none' }}
+                />
+                <button 
+                  type="submit" 
+                  disabled={snapshotLoading || !snapshotSymbol.trim()}
+                  className="btn-primary"
+                  style={{ borderRadius: '12px', padding: '0 20px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Search size={16} /> Fetch
+                </button>
+              </form>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px', marginTop: '-12px' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', alignSelf: 'center', marginRight: '4px' }}>Try exploring:</span>
+                {['bitcoin', 'ethereum', 'solana', 'ripple', 'cardano'].map(coin => (
+                  <button
+                    key={coin}
+                    type="button"
+                    onClick={() => setSnapshotSymbol(coin)}
+                    style={{
+                      background: 'rgba(255, 184, 0, 0.1)',
+                      border: '1px solid rgba(255, 184, 0, 0.2)',
+                      color: '#FFB800',
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {coin}
+                  </button>
+                ))}
+              </div>
+
+              {snapshotLoading && (
+                <div style={{ padding: '40px', display: 'flex', justifyContent: 'center' }}>
+                  <Globe className="animate-spin" size={32} style={{ color: '#FFB800' }} />
+                </div>
+              )}
+
+              {snapshotData && !snapshotLoading && !snapshotData.error && (
+                <div style={{ background: 'var(--bg-obsidian)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '1.4rem', margin: 0 }}>{snapshotSymbol.toUpperCase()} Snapshot</h3>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)', padding: '4px 10px', background: 'var(--bg-elevated)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                      Rank: #{snapshotData.market_cap_rank || 'N/A'}
+                    </span>
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '4px' }}>Market Cap</span>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 600 }}>{formatPrice(snapshotData.market_cap_usd)}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '4px' }}>24h Range</span>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 600 }}>{formatCompact(snapshotData.low_24h)} - {formatCompact(snapshotData.high_24h)}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '4px' }}>All-Time High</span>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--accent-primary)' }}>{formatPrice(snapshotData.ath)}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        {snapshotData.ath_change_pct?.toFixed(2)}% • {new Date(snapshotData.ath_date).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '4px' }}>All-Time Low</span>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--accent-secondary)' }}>{formatPrice(snapshotData.atl)}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        +{snapshotData.atl_change_pct?.toFixed(2)}% • {new Date(snapshotData.atl_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)', gap: '12px', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Circulating</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600, marginTop: '4px' }}>{formatCompact(snapshotData.circulating_supply)}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Total</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600, marginTop: '4px' }}>{formatCompact(snapshotData.total_supply)}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Max Supply</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600, marginTop: '4px' }}>{snapshotData.max_supply ? formatCompact(snapshotData.max_supply) : '∞'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {snapshotData?.error && (
+                <div style={{ padding: '20px', color: 'var(--accent-secondary)', background: 'rgba(255, 59, 48, 0.1)', borderRadius: '12px', border: '1px solid rgba(255, 59, 48, 0.2)' }}>
+                  {snapshotData.error}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Coin Details Modal */}
       <AnimatePresence>
         {selectedCoin && (
