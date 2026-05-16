@@ -21,6 +21,9 @@ import {
 } from 'lucide-react';
 import './index.css';
 
+// Set global base URL for API calls (Vercel -> Hugging Face)
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || '';
+
 const App = () => {
   const [report, setReport] = useState(null);
   const [marketData, setMarketData] = useState(null);
