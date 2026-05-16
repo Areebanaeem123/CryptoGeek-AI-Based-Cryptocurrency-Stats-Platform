@@ -65,6 +65,12 @@ def _job_sync_news():
     _run_async(sync_news())
 
 
+def _job_daily_brief():
+    from step1_data_ingestion.tasks import generate_daily_brief_task
+    logger.info("⏰ Scheduled: generate_daily_brief_task")
+    _run_async(generate_daily_brief_task())
+
+
 def start_scheduler() -> None:
     """Create and start the background scheduler."""
     global _scheduler
@@ -117,6 +123,15 @@ def start_scheduler() -> None:
         trigger=IntervalTrigger(seconds=settings.NEWS_SYNC_INTERVAL + 60),
         id="sync_rag",
         name="Sync RAG vector store",
+        replace_existing=True,
+    )
+
+    # Daily Brief — every 24 hours
+    _scheduler.add_job(
+        _job_daily_brief,
+        trigger=IntervalTrigger(seconds=86400), # 24 hours
+        id="daily_brief",
+        name="Generate daily market report",
         replace_existing=True,
     )
 

@@ -8,7 +8,7 @@ or be triggered manually via the /api/v1/ingestion/trigger endpoint.
 import logging
 import asyncio
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +22,7 @@ from step2_db_storage.session import async_session_factory
 from step1_data_ingestion.coingecko import CoinGeckoService
 from step1_data_ingestion.coinmarketcap import CoinMarketCapService
 from step5_llm_intelligence.sentiment_service import SentimentService
+from step5_llm_intelligence.report_service import MarketReportService
 
 logger = logging.getLogger(__name__)
 
@@ -266,10 +267,23 @@ async def run_full_sync() -> dict[str, int]:
 # ═══════════════════════════════════════════════════════════════════════════
 # NEWS SYNC & SENTIMENT
 # ═══════════════════════════════════════════════════════════════════════════
+async def generate_daily_brief_task() -> Dict[str, Any]:
+    """Autonomous task to generate the daily strategic report."""
+    service = MarketReportService()
+    try:
+        report = await service.generate_daily_brief(save_to_db=True)
+        logger.info("📅 Autonomous Daily Brief generated successfully.")
+        return report
+    except Exception as e:
+        logger.error(f"❌ Failed to generate autonomous daily brief: {e}")
+        raise
+
+
 async def sync_news() -> int:
     """
     Fetch news (currently mock news for the sentiment demo) 
     and automatically analyze sentiment.
+    Returns the number of articles processed.
     """
     sentiment_service = SentimentService()
     

@@ -12,7 +12,7 @@ from alembic import context
 
 # ── Import our models + Base so Alembic can see them ────────────────────────
 from step2_db_storage.base import Base
-from step2_db_storage.models import Coin, PriceHistory, MarketData, NewsArticle  # noqa: F401
+from step2_db_storage.models import Coin, PriceHistory, MarketData, NewsArticle, MarketReport  # noqa: F401
 
 # Alembic Config object
 config = context.config

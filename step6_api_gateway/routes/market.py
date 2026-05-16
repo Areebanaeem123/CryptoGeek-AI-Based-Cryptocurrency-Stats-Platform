@@ -114,6 +114,7 @@ async def market_overview(
     db: AsyncSession = Depends(get_db),
 ):
     """Return a summary of top coins by market cap rank."""
+    now = datetime.now(timezone.utc)
     # Get coins with market data, sorted by rank
     query = (
         select(Coin, MarketData)
@@ -135,6 +136,18 @@ async def market_overview(
         )
         price_row = (await db.execute(price_q)).scalar_one_or_none()
 
+        # Get sparkline data (last 7 days)
+        spark_q = (
+            select(PriceHistory.price_usd)
+            .where(PriceHistory.coin_id == coin.id)
+            .where(PriceHistory.timestamp >= now - timedelta(days=7))
+            .order_by(PriceHistory.timestamp.asc())
+        )
+        spark_rows = (await db.execute(spark_q)).scalars().all()
+        # Downsample to ~30 points for the SVG
+        step = max(1, len(spark_rows) // 30)
+        sparkline = [float(p) for p in spark_rows[::step]] if spark_rows else []
+
         items.append(
             MarketOverviewItem(
                 coingecko_id=coin.coingecko_id,
@@ -148,6 +161,7 @@ async def market_overview(
                 volume_24h=price_row.volume_24h if price_row else None,
                 high_24h=md.high_24h,
                 low_24h=md.low_24h,
+                sparkline_in_7d=sparkline,
             )
         )
 

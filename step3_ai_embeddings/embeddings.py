@@ -5,8 +5,6 @@ EmbeddingService — wrapper for OpenAI embeddings API.
 import logging
 from typing import List
 
-import numpy as np
-from sentence_transformers import SentenceTransformer
 from core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -25,6 +23,7 @@ class EmbeddingService:
     def _ensure_model_loaded(self):
         """Lazy load the model to avoid overhead if not used."""
         if EmbeddingService._model is None:
+            from sentence_transformers import SentenceTransformer
             logger.info(f"Loading local embedding model: {self.model_name}")
             EmbeddingService._model = SentenceTransformer(self.model_name)
             logger.info("Model loaded successfully.")
@@ -37,6 +36,7 @@ class EmbeddingService:
             return []
 
         try:
+            import numpy as np
             # Process texts
             processed_texts = [text.replace("\n", " ") for text in texts]
             

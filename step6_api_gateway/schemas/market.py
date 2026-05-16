@@ -61,6 +61,7 @@ class MarketOverviewItem(BaseModel):
     volume_24h: float | None = None
     high_24h: float | None = None
     low_24h: float | None = None
+    sparkline_in_7d: list[float] | None = None
 
 
 class MarketOverviewResponse(BaseModel):

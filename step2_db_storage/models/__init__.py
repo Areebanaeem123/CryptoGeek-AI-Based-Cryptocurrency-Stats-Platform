@@ -4,5 +4,6 @@ from step2_db_storage.models.coin import Coin
 from step2_db_storage.models.price_history import PriceHistory
 from step2_db_storage.models.market_data import MarketData
 from step2_db_storage.models.news import NewsArticle
+from step2_db_storage.models.report import MarketReport
 
 __all__ = ["Coin", "PriceHistory", "MarketData", "NewsArticle"]

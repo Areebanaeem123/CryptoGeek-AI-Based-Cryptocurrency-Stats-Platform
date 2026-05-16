@@ -6,8 +6,6 @@ import logging
 from typing import List, Dict, Any, Optional
 
 from core.config import get_settings
-from step3_ai_embeddings.embeddings import EmbeddingService
-from step4_rag_vector_store.vector_store import VectorStoreService
 from step5_llm_intelligence.groq_client import GroqService
 
 logger = logging.getLogger(__name__)
@@ -17,6 +15,8 @@ class ChatService:
     """Service to handle RAG-powered chat queries."""
 
     def __init__(self):
+        from step3_ai_embeddings.embeddings import EmbeddingService
+        from step4_rag_vector_store.vector_store import VectorStoreService
         self.embedding_service = EmbeddingService()
         self.vector_store = VectorStoreService()
         self.llm = GroqService()

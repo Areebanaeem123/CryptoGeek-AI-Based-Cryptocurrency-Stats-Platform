@@ -11,7 +11,6 @@ from step2_db_storage.session import async_session_factory
 from step2_db_storage.models.coin import Coin
 from step2_db_storage.models.market_data import MarketData
 from step2_db_storage.models.news import NewsArticle
-from step5_llm_intelligence.groq_client import GroqService
 
 logger = logging.getLogger(__name__)
 
@@ -19,20 +18,17 @@ class MarketReportService:
     """Service to synthesize market data and news into intelligence reports."""
 
     def __init__(self):
+        from step5_llm_intelligence.groq_client import GroqService
         self.llm = GroqService()
 
-    async def generate_daily_brief(self) -> Dict[str, Any]:
+    async def generate_daily_brief(self, save_to_db: bool = True) -> Dict[str, Any]:
         """
         Generates a comprehensive Daily Brief report.
-        1. Gathers Top 10 coins and price data.
-        2. Gathers Top news and sentiment.
-        3. Uses Groq to synthesize into a 'Hedge Fund' style report.
         """
         logger.info("Generating Daily Brief report...")
 
         async with async_session_factory() as session:
-            # 1. Fetch Top 10 Coins by Market Cap Rank
-            # Joining Coin and MarketData
+            # 1. Fetch Top 10 Coins
             stmt = (
                 select(Coin.symbol, Coin.name, MarketData.market_cap_rank, MarketData.market_cap_usd)
                 .join(MarketData, Coin.id == MarketData.coin_id)
@@ -42,7 +38,7 @@ class MarketReportService:
             result = await session.execute(stmt)
             top_coins = result.all()
 
-            # 2. Fetch Recent High-Impact News (Bullish/Bearish)
+            # 2. Fetch Recent News
             news_stmt = (
                 select(NewsArticle.title, NewsArticle.sentiment, NewsArticle.sentiment_score)
                 .order_by(NewsArticle.created_at.desc())
@@ -51,39 +47,62 @@ class MarketReportService:
             news_result = await session.execute(news_stmt)
             latest_news = news_result.all()
 
-        # 3. Formulate Data Strings for LLM
+        # 3. Formulate LLM Prompt
         coins_str = "\n".join([f"- {c.name} ({c.symbol.upper()}): Rank #{c.market_cap_rank}" for c in top_coins])
         news_str = "\n".join([f"- {n.title} (Sentiment: {n.sentiment}, Score: {n.sentiment_score})" for n in latest_news])
 
-        # 4. LLM Synthesis
         system_prompt = f"""
-You are a Senior Strategic Analyst at a top-tier Crypto Hedge Fund.
-Your task is to provide a "Daily Brief" for the Investment Committee.
-
-FORMAT:
-1. Executive Summary: Overarching market vibe.
-2. Market Dynamics: Analysis of the Top 10 movements.
-3. Narrative & Sentiment: How the news is shaping the market.
-
-TONE: 
-- Professional, analytical, and data-driven.
-- Avoid hype or slang. 
-- Use financial terminology (e.g., "Liquidity," "Institutional Momentum," "Risk-off sentiment").
-
+You are a Senior Strategic Analyst at a top-tier Crypto Hedge Fund. 
+Your task is to provide a "Daily Brief" for the Investment Committee. 
+Tone: Professional, analytical, and data-driven. 
 DATA AS OF {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC:
 ### TOP MARKET ASSETS:
 {coins_str}
-
 ### RECENT INTELLIGENCE:
 {news_str}
 """
-
-        prompt = "Synthesize this data into a 3-paragraph executive daily brief."
-        
+        prompt = (
+            "Synthesize this data into an executive daily brief in Markdown.\n"
+            "You MUST structure your response with EXACTLY these three headers:\n"
+            "### Market Overview\n"
+            "### Key Trends\n"
+            "### Strategic Recommendations"
+        )
         report_content = await self.llm.generate_response(prompt=prompt, system_prompt=system_prompt)
 
-        return {
+        # 4. Save to Database
+        report_data = {
             "timestamp": datetime.now(timezone.utc),
             "report_markdown": report_content or "Failed to generate report.",
             "top_assets": [{"symbol": c.symbol, "name": c.name, "rank": c.market_cap_rank} for c in top_coins]
         }
+
+        if save_to_db and report_content:
+            from step2_db_storage.models.report import MarketReport
+            async with async_session_factory() as session:
+                new_report = MarketReport(
+                    report_type="daily_brief",
+                    content=report_content,
+                    metadata_json={"top_assets": report_data["top_assets"]}
+                )
+                session.add(new_report)
+                await session.commit()
+                logger.info("✅ Daily Brief saved to database.")
+
+        return report_data
+
+    async def get_latest_report(self) -> Optional[Dict[str, Any]]:
+        """Retrieves the most recent report from the database."""
+        from step2_db_storage.models.report import MarketReport
+        async with async_session_factory() as session:
+            stmt = select(MarketReport).order_by(MarketReport.created_at.desc()).limit(1)
+            result = await session.execute(stmt)
+            report = result.scalar_one_or_none()
+            
+            if report:
+                return {
+                    "timestamp": report.created_at,
+                    "report_markdown": report.content,
+                    "top_assets": report.metadata_json.get("top_assets", []) if report.metadata_json else []
+                }
+        return None

@@ -7,8 +7,6 @@ import logging
 import pickle
 from typing import List, Dict, Any, Tuple
 
-import faiss
-import numpy as np
 from core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -28,13 +26,15 @@ class VectorStoreService:
         
         # Ensure directory exists
         os.makedirs(self.index_path, exist_ok=True)
-        
-        self.load_index()
 
     def load_index(self):
         """Load FAISS index and metadata from disk."""
+        if self.index is not None:
+            return
+
         if os.path.exists(self.index_file) and os.path.exists(self.metadata_file):
             try:
+                import faiss
                 self.index = faiss.read_index(self.index_file)
                 with open(self.metadata_file, "rb") as f:
                     self.metadata = pickle.load(f)
@@ -48,6 +48,7 @@ class VectorStoreService:
         """Save FAISS index and metadata to disk."""
         if self.index is not None:
             try:
+                import faiss
                 faiss.write_index(self.index, self.index_file)
                 with open(self.metadata_file, "wb") as f:
                     pickle.dump(self.metadata, f)
@@ -62,6 +63,11 @@ class VectorStoreService:
         if not embeddings:
             return
 
+        import numpy as np
+        import faiss
+        
+        self.load_index()
+        
         dim = len(embeddings[0])
         vector_data = np.array(embeddings).astype('float32')
 
@@ -77,6 +83,9 @@ class VectorStoreService:
         """
         Perform similarity search and return top k documents with metadata.
         """
+        import numpy as np
+        self.load_index()
+
         if self.index is None or not query_embedding:
             return []
 
