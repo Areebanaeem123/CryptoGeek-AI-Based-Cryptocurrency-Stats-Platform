@@ -10,7 +10,7 @@ Runs background jobs to keep crypto data fresh:
 import asyncio
 import logging
 
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from core.config import get_settings
@@ -18,68 +18,54 @@ from core.config import get_settings
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-_scheduler: BackgroundScheduler | None = None
+_scheduler: AsyncIOScheduler | None = None
 
 
-def _run_async(coro):
-    """Helper to run an async coroutine from a sync APScheduler callback."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.ensure_future(coro)
-        else:
-            loop.run_until_complete(coro)
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(coro)
-
-
-def _job_sync_coins():
+async def _job_sync_coins():
     from step1_data_ingestion.tasks import sync_coin_list
     logger.info("⏰ Scheduled: sync_coin_list")
-    _run_async(sync_coin_list())
+    await sync_coin_list()
 
 
-def _job_sync_prices():
+async def _job_sync_prices():
     from step1_data_ingestion.tasks import sync_prices
     logger.info("⏰ Scheduled: sync_prices")
-    _run_async(sync_prices())
+    await sync_prices()
 
 
-def _job_sync_market_data():
+async def _job_sync_market_data():
     from step1_data_ingestion.tasks import sync_market_data
     logger.info("⏰ Scheduled: sync_market_data")
-    _run_async(sync_market_data())
+    await sync_market_data()
 
 
-def _job_sync_rag():
+async def _job_sync_rag():
     from step4_rag_vector_store.rag_sync import sync_news_to_vector_store
     logger.info("⏰ Scheduled: sync_news_to_vector_store")
-    _run_async(sync_news_to_vector_store())
+    await sync_news_to_vector_store()
 
 
-def _job_sync_news():
+async def _job_sync_news():
     from step1_data_ingestion.tasks import sync_news
     logger.info("⏰ Scheduled: sync_news")
-    _run_async(sync_news())
+    await sync_news()
 
 
-def _job_daily_brief():
+async def _job_daily_brief():
     from step1_data_ingestion.tasks import generate_daily_brief_task
     logger.info("⏰ Scheduled: generate_daily_brief_task")
-    _run_async(generate_daily_brief_task())
+    await generate_daily_brief_task()
 
 
 def start_scheduler() -> None:
-    """Create and start the background scheduler."""
+    """Create and start the async scheduler."""
     global _scheduler
 
     if _scheduler is not None:
         logger.warning("Scheduler already running")
         return
 
-    _scheduler = BackgroundScheduler()
+    _scheduler = AsyncIOScheduler()
 
     # Coin list — every 24 hours
     _scheduler.add_job(
@@ -117,7 +103,7 @@ def start_scheduler() -> None:
         replace_existing=True,
     )
 
-    # RAG sync — every 10 minutes (offset by 1 min)
+    # RAG sync — every 11 minutes
     _scheduler.add_job(
         _job_sync_rag,
         trigger=IntervalTrigger(seconds=settings.NEWS_SYNC_INTERVAL + 60),
@@ -129,7 +115,7 @@ def start_scheduler() -> None:
     # Daily Brief — every 24 hours
     _scheduler.add_job(
         _job_daily_brief,
-        trigger=IntervalTrigger(seconds=86400), # 24 hours
+        trigger=IntervalTrigger(seconds=86400),
         id="daily_brief",
         name="Generate daily market report",
         replace_existing=True,
