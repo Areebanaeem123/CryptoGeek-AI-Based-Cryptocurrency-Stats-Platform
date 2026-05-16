@@ -22,13 +22,16 @@ import os
 from core.config import get_settings
 settings = get_settings()
 
-db_url = os.environ.get("DATABASE_URL_SYNC") or settings.DATABASE_URL_SYNC
+db_url = (os.environ.get("DATABASE_URL_SYNC") or settings.DATABASE_URL_SYNC).strip()
 if db_url:
     # Ensure it's the sync version for psycopg2
     if "asyncpg" in db_url:
         db_url = db_url.replace("asyncpg", "psycopg2")
-    config.set_main_option("sqlalchemy.url", db_url)
-    print(f"🚀 Alembic using database: {db_url.split('@')[-1]}") # Log host only for safety
+    
+    # Escape percent signs for configparser interpolation
+    escaped_db_url = db_url.replace("%", "%%")
+    config.set_main_option("sqlalchemy.url", escaped_db_url)
+    print(f"Alembic using database: {db_url.split('@')[-1]}") # Log host only for safety
 
 # Logging
 if config.config_file_name is not None:
