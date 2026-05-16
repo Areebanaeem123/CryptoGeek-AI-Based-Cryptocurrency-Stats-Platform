@@ -22,5 +22,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy the rest of the application
 COPY --chown=user . .
 
+# Make start script executable
+RUN chmod +x start.sh
+
 # Hugging Face uses port 7860 by default
-CMD ["uvicorn", "step6_api_gateway.main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["./start.sh"]
