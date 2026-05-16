@@ -17,13 +17,18 @@ from step2_db_storage.models import Coin, PriceHistory, MarketData, NewsArticle,
 # Alembic Config object
 config = context.config
 
-# Override sqlalchemy.url from our .env if available
-try:
-    from core.config import get_settings
-    settings = get_settings()
-    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_SYNC)
-except Exception:
-    pass  # Fall back to alembic.ini value
+# Override sqlalchemy.url from our settings if available
+import os
+from core.config import get_settings
+settings = get_settings()
+
+db_url = os.environ.get("DATABASE_URL_SYNC") or settings.DATABASE_URL_SYNC
+if db_url:
+    # Ensure it's the sync version for psycopg2
+    if "asyncpg" in db_url:
+        db_url = db_url.replace("asyncpg", "psycopg2")
+    config.set_main_option("sqlalchemy.url", db_url)
+    print(f"🚀 Alembic using database: {db_url.split('@')[-1]}") # Log host only for safety
 
 # Logging
 if config.config_file_name is not None:
