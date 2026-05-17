@@ -514,14 +514,8 @@ const App = () => {
             </motion.div>
           </div>
         ) : (
-          <section className="sidebar-section">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="daily-brief-card"
-              style={{ height: '100%' }}
-            >
-              {/* Left Sidebar: Ecosystem List */}
+          <>
+            <section className="sidebar-section">
               <aside>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                   <Database size={20} style={{ color: 'var(--accent-primary)' }} />
@@ -591,22 +585,23 @@ const App = () => {
                   </button>
                 </div>
               </aside>
+            </section>
 
-              {/* Center Main Content Area */}
-              <div className="main-content-area" style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-                
-                {/* Market Overview Headline */}
-                <div className="market-overview-headline" style={{ padding: '20px 0', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '32px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                    <BarChart3 size={24} style={{ color: 'var(--accent-primary)' }} />
-                    <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(90deg, #F4F4F5, #A1A1AA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                      Market Overview
-                    </h1>
-                  </div>
-                  <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-                    {reportSections?.overview ? reportSections.overview : "Analyzing market metrics..."}
-                  </p>
+            {/* Center Main Content Area */}
+            <div className="main-content-area" style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+              
+              {/* Market Overview Headline */}
+              <div className="market-overview-headline" style={{ padding: '20px 0', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '32px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <BarChart3 size={24} style={{ color: 'var(--accent-primary)' }} />
+                  <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(90deg, #F4F4F5, #A1A1AA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    Market Overview
+                  </h1>
                 </div>
+                <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+                  {reportSections?.overview ? reportSections.overview : "Analyzing market metrics..."}
+                </p>
+              </div>
 
               {/* Row 2: News Articles */}
               <section>
@@ -677,11 +672,8 @@ const App = () => {
                   ))}
                 </div>
               </section>
-
-              </div>
-
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          </>
         )}
       </main>
 
