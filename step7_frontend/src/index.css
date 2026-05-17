@@ -286,26 +286,27 @@ button {
   }
 }
 
-/* Dashboard Container (Centering) */
+/* Dashboard Container (Fixed Frame) */
 .dashboard-container {
   width: 100%;
-  max-width: 100%; /* Go edge-to-edge for far left/right effect */
+  max-width: 100%;
   margin: 0;
   padding: 40px 60px;
   position: relative;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  overflow: hidden; /* Lock the outer page scroll */
 }
 
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 24px 20px;
-    height: auto;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
 }
 
