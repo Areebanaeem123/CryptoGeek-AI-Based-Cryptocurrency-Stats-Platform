@@ -22,16 +22,23 @@ import os
 from core.config import get_settings
 settings = get_settings()
 
-db_url = (os.environ.get("DATABASE_URL_SYNC") or settings.DATABASE_URL_SYNC).strip()
+db_url = (
+    os.environ.get("DATABASE_URL_SYNC") or 
+    os.environ.get("DATABASE_URL") or 
+    settings.DATABASE_URL_SYNC
+).strip()
+
 if db_url:
-    # Ensure it's the sync version for psycopg2
+    # Ensure it's the sync version for psycopg2/Alembic
     if "asyncpg" in db_url:
         db_url = db_url.replace("asyncpg", "psycopg2")
+    elif "postgresql://" in db_url:
+        # Standard postgresql:// URI needs to be postgresql+psycopg2:// for Alembic/SQLAlchemy in some versions
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg2://")
     
-    # Escape percent signs for configparser interpolation
-    escaped_db_url = db_url.replace("%", "%%")
-    config.set_main_option("sqlalchemy.url", escaped_db_url)
-    print(f"Alembic using database: {db_url.split('@')[-1]}") # Log host only for safety
+    # Log database connection info (safe version)
+    db_host = db_url.split("@")[-1] if "@" in db_url else "unknown"
+    print(f"🚀 Alembic using database host: {db_host}")
 
 # Logging
 if config.config_file_name is not None:
@@ -43,9 +50,9 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
-    url = config.get_main_option("sqlalchemy.url")
+    # Bypass config and use db_url directly to avoid interpolation errors
     context.configure(
-        url=url,
+        url=db_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -56,11 +63,13 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    # Bypass config and create engine directly to avoid interpolation errors
+    from sqlalchemy import create_engine
+    connectable = create_engine(
+        db_url,
         poolclass=pool.NullPool,
     )
+    
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():

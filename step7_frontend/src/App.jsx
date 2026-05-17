@@ -310,7 +310,7 @@ const App = () => {
       <motion.header 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        className="header-content"
       >
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
@@ -321,7 +321,7 @@ const App = () => {
           </p>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="header-actions">
           {error && (
             <span style={{ color: 'var(--accent-secondary)', fontSize: '0.75rem', fontWeight: 600 }}>
               ⚠️ {error}
@@ -399,7 +399,7 @@ const App = () => {
       </motion.header>
 
       {/* Main Stacked Content */}
-      <main style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '40px', alignItems: 'start' }}>
+      <main className="main-layout">
         {loading ? (
           <div style={{ gridColumn: '1 / -1', height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <motion.div 
@@ -425,17 +425,7 @@ const App = () => {
                   <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Live Coin Ecosystem</h2>
                 </div>
                 
-                <div 
-                  className="ecosystem-list-container"
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '16px',
-                    maxHeight: 'calc(100vh - 300px)',
-                    overflowY: 'auto',
-                    paddingRight: '8px',
-                  }}
-                >
+                <div className="ecosystem-list-container">
                   {coinsData?.coins.map((coin) => (
                     <motion.div 
                       key={coin.id} 
@@ -540,7 +530,7 @@ const App = () => {
                   </div>
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: 'calc(100vh - 480px)', overflowY: 'auto', paddingRight: '8px', paddingBottom: '20px' }}>
+                <div className="news-list-container">
                   {newsData?.articles?.map((article) => (
                     <motion.div 
                       key={article.id} 
@@ -1187,7 +1177,7 @@ const App = () => {
                     </div>
                   </div>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', background: 'var(--bg-obsidian)', padding: '24px', borderRadius: '16px' }}>
+                  <div className="modal-grid" style={{ background: 'var(--bg-obsidian)', padding: '24px', borderRadius: '16px' }}>
                     <div>
                       <div style={{ color: 'var(--text-dim)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Current Price</div>
                       <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{formatPrice(selectedCoin.current_price_usd)}</div>
@@ -1248,7 +1238,8 @@ const App = () => {
               position: 'fixed',
               bottom: '110px',
               right: '32px',
-              width: '380px',
+              width: 'calc(100vw - 64px)',
+              maxWidth: '380px',
               height: '600px',
               maxHeight: 'calc(100vh - 140px)',
               backgroundColor: 'var(--bg-elevated)',

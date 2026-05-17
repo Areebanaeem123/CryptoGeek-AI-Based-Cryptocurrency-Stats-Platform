@@ -132,6 +132,44 @@ button {
   filter: brightness(1.1);
 }
 
+/* Header Layout */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  gap: 20px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1024px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+  
+  .header-actions {
+    justify-content: flex-start;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .header-actions::-webkit-scrollbar {
+    height: 4px;
+  }
+}
+
 /* Dashboard Container (Centering) */
 .dashboard-container {
   width: 100%;
@@ -143,22 +181,64 @@ button {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto; /* Changed from hidden to allow scrolling on mobile */
+  overflow-x: hidden;
 }
 
-/* Dashboad Grid Layout (New Stacked Pattern) */
-.intelligence-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-bottom: 32px;
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 24px 20px;
+    height: auto;
+    min-height: 100vh;
+  }
 }
 
-.ecosystem-grid {
+/* Main Layout Grid */
+.main-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: 320px 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+/* Ecosystem List */
+.ecosystem-list-container {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  margin-bottom: 40px;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+@media (max-width: 1024px) {
+  .ecosystem-list-container {
+    max-height: 400px; /* Reduced fixed height for mobile */
+  }
+}
+
+/* Modal Styles Adjustments */
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: 12px;
+  }
+  
+  .modal-content {
+    padding: 20px;
+    border-radius: 16px;
+  }
+  
+  .modal-close {
+    top: 12px;
+    right: 12px;
+  }
 }
 
 .ecosystem-card {
@@ -229,6 +309,35 @@ button {
 
 .spark-path.down {
   stroke: var(--accent-secondary);
+}
+
+.news-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: calc(100vh - 480px);
+  overflow-y: auto;
+  padding-right: 8px;
+  padding-bottom: 20px;
+}
+
+@media (max-width: 1024px) {
+  .news-list-container {
+    max-height: 500px;
+  }
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .modal-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 /* Sidebar List Styles */
