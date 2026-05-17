@@ -17,7 +17,9 @@ import {
   MessageSquare,
   Send,
   User,
-  Trophy
+  Trophy,
+  Menu,
+  ChevronRight
 } from 'lucide-react';
 import './index.css';
 
@@ -70,6 +72,8 @@ const App = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [sessionId] = useState(() => Math.random().toString(36).substring(2, 12));
   const messagesEndRef = useRef(null);
+
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const fetchData = useCallback(async (force = false) => {
     try {
@@ -312,13 +316,16 @@ const App = () => {
         animate={{ opacity: 1, y: 0 }}
         className="header-content"
       >
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button 
+            className="hamburger-btn"
+            onClick={() => setIsDrawerOpen(true)}
+          >
+            <Menu size={24} />
+          </button>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
-            crypto<span style={{ color: 'var(--accent-tertiary)' }}>Geek</span>
+            CRYPTO<span style={{ color: 'var(--accent-tertiary)' }}>GEEK</span>
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Autonomous Market Research & Intelligence
-          </p>
         </div>
         
         <div className="header-actions">
@@ -398,6 +405,102 @@ const App = () => {
         </div>
       </motion.header>
 
+      {/* Mobile Drawer */}
+      <AnimatePresence>
+        {isDrawerOpen && (
+          <>
+            <motion.div 
+              className="drawer-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDrawerOpen(false)}
+            />
+            <motion.div 
+              className="mobile-drawer"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
+              <div className="drawer-header">
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  <span style={{ color: 'var(--accent-tertiary)' }}>CRYPTO</span>GEEK
+                </h2>
+                <button 
+                  onClick={() => setIsDrawerOpen(false)}
+                  style={{ color: 'var(--text-dim)', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="drawer-content">
+                <div>
+                  <span className="drawer-section-title">Market Intelligence</span>
+                  <div className="drawer-nav">
+                    <button className="drawer-nav-item" onClick={() => { setShowKeyTrendsModal(true); setIsDrawerOpen(false); }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Activity size={18} style={{ color: 'var(--accent-primary)' }} />
+                        <span>Key Market Trends</span>
+                      </div>
+                      <ChevronRight size={16} style={{ color: 'var(--text-dim)' }} />
+                    </button>
+                    <button className="drawer-nav-item" onClick={() => { setShowStrategicBriefModal(true); setIsDrawerOpen(false); }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Sparkles size={18} style={{ color: '#F8B500' }} />
+                        <span>Strategic Brief</span>
+                      </div>
+                      <ChevronRight size={16} style={{ color: 'var(--text-dim)' }} />
+                    </button>
+                    <button className="drawer-nav-item" onClick={() => { setShowSentimentModal(true); setIsDrawerOpen(false); }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <TrendingUp size={18} style={{ color: '#00FF94' }} />
+                        <span>Market Pulse</span>
+                      </div>
+                      <ChevronRight size={16} style={{ color: 'var(--text-dim)' }} />
+                    </button>
+                    <button className="drawer-nav-item" onClick={() => { setShowLeaderboardModal(true); fetchLeaderboard(); setIsDrawerOpen(false); }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Trophy size={18} style={{ color: '#FFD700' }} />
+                        <span>Leaderboard</span>
+                      </div>
+                      <ChevronRight size={16} style={{ color: 'var(--text-dim)' }} />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="drawer-section-title">Live Coin Ecosystem</span>
+                  <div className="ecosystem-list-container" style={{ maxHeight: 'none', padding: 0 }}>
+                    {coinsData?.coins.map((coin) => (
+                      <motion.div 
+                        key={coin.id}
+                        whileTap={{ scale: 0.98 }}
+                        className="ecosystem-card"
+                        onClick={() => { handleCoinClick(coin.coingecko_id); setIsDrawerOpen(false); }}
+                        style={{ padding: '12px', marginBottom: '8px', border: '1px solid var(--border-subtle)' }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <img src={coin.image_url} alt="" width="28" height="28" style={{ borderRadius: '50%' }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>{coin.symbol.toUpperCase()}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{formatPrice(coin.current_price_usd)}</div>
+                          </div>
+                          <div className={coin.price_change_24h_pct >= 0 ? 'price-up' : 'price-down'} style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                            {coin.price_change_24h_pct >= 0 ? '+' : ''}{coin.price_change_24h_pct?.toFixed(1)}%
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Main Stacked Content */}
       <main className="main-layout">
         {loading ? (
@@ -411,12 +514,12 @@ const App = () => {
             </motion.div>
           </div>
         ) : (
-          <AnimatePresence mode="wait">
+          <section className="sidebar-section">
             <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              style={{ display: 'contents' }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="daily-brief-card"
+              style={{ height: '100%' }}
             >
               {/* Left Sidebar: Ecosystem List */}
               <aside>
