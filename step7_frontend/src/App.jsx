@@ -323,9 +323,12 @@ const App = () => {
           >
             <Menu size={24} />
           </button>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
-            CRYPTO<span style={{ color: 'var(--accent-tertiary)' }}>GEEK</span>
-          </h1>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <h1 className="logo-title">
+              CRYPTO<span style={{ color: 'var(--accent-tertiary)' }}>GEEK</span>
+            </h1>
+            <p className="logo-subtitle">Autonomous Market Research & Intelligence</p>
+          </div>
         </div>
         
         <div className="header-actions">

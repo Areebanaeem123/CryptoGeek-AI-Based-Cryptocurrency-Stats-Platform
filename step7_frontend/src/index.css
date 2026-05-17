@@ -138,16 +138,44 @@ button {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 48px;
-  gap: 24px;
+  gap: 32px;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* Keep on one line on desktop */
   justify-content: flex-end;
 }
+
+.logo-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1;
+}
+
+.logo-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .logo-title {
+    font-size: 1.8rem; /* Smaller for mobile */
+  }
+  
+  .logo-subtitle {
+    display: none; /* Hide subtitle on very small screens to save space */
+  }
+}
+
+
 
 .hamburger-btn {
   display: none;
@@ -261,8 +289,8 @@ button {
 /* Dashboard Container (Centering) */
 .dashboard-container {
   width: 100%;
-  max-width: 1600px;
-  margin: 0 auto;
+  max-width: 100%; /* Go edge-to-edge for far left/right effect */
+  margin: 0;
   padding: 40px 60px;
   position: relative;
   box-sizing: border-box;
